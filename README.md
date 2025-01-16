@@ -1,6 +1,7 @@
 # Music Player
 
 A simple music player based on [@distube/ytdl-core](https://www.npmjs.com/package/@distube/ytdl-core) with a good UI
+Note:- It doesn't work on any hosting platforms
 
 ## Installation
 

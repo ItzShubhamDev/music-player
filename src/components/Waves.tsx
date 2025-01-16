@@ -68,8 +68,6 @@ const Waves = ({
             const canvas = canvasRef.current as HTMLCanvasElement;
             const parent = canvas.parentElement;
             if (parent) canvas.width = parent.clientWidth;
-            const height = window.innerHeight;
-            canvas.height = height / 10;
         };
         window.addEventListener("resize", handleResize);
         return () => window.removeEventListener("resize", handleResize);

@@ -8,10 +8,7 @@ let agent: ytdl.Agent | undefined;
 
 try {
     const cookies = await import("./cookies.json");
-    agent = ytdl.createAgent(cookies.default, {
-        pipelining: 5,
-        maxRedirections: 0,
-    });
+    agent = ytdl.createAgent(cookies.default);
 } catch (e) {
     console.log("Error settings cookies, proceeding without cookies", e);
 }

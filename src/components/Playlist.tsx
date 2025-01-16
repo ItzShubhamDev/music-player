@@ -66,7 +66,7 @@ const Playlist = ({
                         Playlist
                     </h1>
                     <button
-                        className="text-white bg-gray-800 hover:text-emerald-500 transition-colors p-2 rounded-lg"
+                        className="text-white bg-gray-800 hover:text-[var(--primary)] transition-colors p-2 rounded-lg"
                         onClick={() => updateQueue(playlist)}
                     >
                         <Play size={24} />
@@ -144,7 +144,7 @@ const PlaylistItem = ({
                 offset={2}
             />
             <button
-                className="text-white hover:text-emerald-500 transition-colors"
+                className="text-white hover:text-[var(--primary)] transition-colors"
                 onClick={(e) => {
                     e.stopPropagation();
                     onPlaylistAdd();

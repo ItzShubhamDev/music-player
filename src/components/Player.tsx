@@ -40,6 +40,7 @@ const Player = ({
     const [progress, setProgress] = useState(0);
     const [audioUrl, setAudioUrl] = useState<Record<string, string>>({});
     const [cover, setCover] = useState<string | null>(null);
+    const [coverUrl, setCoverUrl] = useState<Record<string, string>>({});
     const [loading, setLoading] = useState(false);
     const [shuffle, setShuffle] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -47,10 +48,15 @@ const Player = ({
     useEffect(() => {
         const getMusic = async (v: string) => {
             try {
+                if (coverUrl[v]) {
+                    setCover(coverUrl[v]);
+                    return;
+                }
                 const r = await fetch(`/thumbnail?v=${v}`);
                 const blob = await r.blob();
                 const url = URL.createObjectURL(blob);
                 setCover(url);
+                setCoverUrl((prev) => ({ ...prev, [v]: url }));
             } catch (error) {
                 setError("Error fetching music");
                 console.error("Error fetching music:", error);
@@ -105,11 +111,50 @@ const Player = ({
     }, [music]);
 
     useEffect(() => {
+        if (music) localStorage.setItem("music", JSON.stringify(music));
+        if (navigator) {
+            if ("mediaSession" in navigator) {
+                navigator.mediaSession.metadata = new MediaMetadata({
+                    title: music?.name,
+                    artist: music?.artist,
+                    artwork: [
+                        {
+                            src: cover || "/icon.png",
+                            sizes: "320x180",
+                            type: "",
+                        },
+                    ],
+                });
+            }
+        }
+        if (!document) return;
+        const link: HTMLLinkElement =
+            document.querySelector("link[rel*='icon']") ||
+            document.createElement("link");
+        link.type = "image/png";
+        link.rel = "icon";
+        link.href = cover || "/icon.png";
+        if (!link.parentNode) {
+            document.head.appendChild(link);
+        }
+        const title = music
+            ? `${music.name} - ${music.artist}`
+            : "Music Player";
+        document.title = title;
+    }, [music, cover]);
+
+    useEffect(() => {
         const getColors = async () => {
             if (!cover) return;
             const colors = await extractColors(cover);
             const colorsHex = colors.map((color) => color.hex);
             setColors(colorsHex);
+            if (!document) return;
+            const root = document.documentElement;
+            if (colorsHex.length >= 1)
+                root.style.setProperty("--primary", colorsHex[0]);
+            if (colorsHex.length >= 2)
+                root.style.setProperty("--accent", colorsHex[1]);
         };
         getColors();
     }, [cover]);
@@ -146,11 +191,12 @@ const Player = ({
                 volume.removeEventListener("click", () => {});
             }
         };
-    });
+    }, []);
 
     useEffect(() => {
         const audio = audioRef.current;
         if (!audio) return;
+        audio.volume = parseFloat(localStorage.getItem("volume") || "1");
 
         audio.addEventListener("play", () => setPlaying(true));
         audio.addEventListener("pause", () => setPlaying(false));
@@ -160,6 +206,9 @@ const Player = ({
         audio.addEventListener("error", () => {
             setPlaying(false);
         });
+        audio.addEventListener("volumechange", () => {
+            localStorage.setItem("volume", audio.volume.toString());
+        });
         return () => {
             audio.removeEventListener("play", () => setPlaying(true));
             audio.removeEventListener("pause", () => setPlaying(false));
@@ -168,6 +217,9 @@ const Player = ({
             );
             audio.removeEventListener("error", () => {
                 setPlaying(false);
+            });
+            audio.removeEventListener("volumechange", () => {
+                localStorage.setItem("volume", audio.volume.toString());
             });
         };
     }, []);
@@ -205,10 +257,10 @@ const Player = ({
 
     const nextSong = useCallback(() => {
         if (loading) return;
+        console.log(queue);
         if (queue.length > 0) {
             if (shuffle) {
                 const random = Math.floor(Math.random() * queue.length);
-                console.log(random);
                 setMusic(queue[random]);
                 setQueue((prev) => [
                     ...prev.slice(0, random),
@@ -218,7 +270,7 @@ const Player = ({
             }
             setMusic(queue[0]);
             setQueue((prev) => prev.slice(1));
-            if (music) {
+            if (music && !history.some((m) => m.id === music.id)) {
                 setHistory((prev) => [music, ...prev]);
             }
         }
@@ -227,7 +279,7 @@ const Player = ({
     const prevSong = useCallback(() => {
         if (loading) return;
         if (history.length > 0) {
-            if (music) {
+            if (music && !queue.some((m) => m.id === music.id)) {
                 setQueue((prev) => [music, ...prev]);
             }
             setMusic(history[0]);
@@ -244,6 +296,16 @@ const Player = ({
         };
     }, [nextSong]);
 
+    useEffect(() => {
+        if (!navigator) return;
+        if ("mediaSession" in navigator) {
+            navigator.mediaSession.setActionHandler("play", playPause);
+            navigator.mediaSession.setActionHandler("pause", playPause);
+            navigator.mediaSession.setActionHandler("previoustrack", prevSong);
+            navigator.mediaSession.setActionHandler("nexttrack", nextSong);
+        }
+    }, [nextSong, prevSong]);
+
     const setRepeat = () => {
         if (!audioRef.current) return;
         audioRef.current.loop = !audioRef.current.loop;
@@ -255,13 +317,13 @@ const Player = ({
             <div className="relative sm:bg-gray-800/20 rounded-lg sm:shadow-xl p-6 w-full sm:w-80 space-y-4 flex flex-col items-center justify-center">
                 {loading && (
                     <div className="absolute top-0 w-full h-8 overflow-hidden rounded-t-lg">
-                        <div className="w-full animate-progress h-1 bg-emerald-500 origin-left-right rounded" />
+                        <div className="w-full animate-progress h-1 bg-[var(--primary)] origin-left-right rounded" />
                     </div>
                 )}
 
                 <div className="w-72 aspect-square">
                     <img
-                        src={cover || "/music.png"}
+                        src={cover || "/icon.png"}
                         alt="Album Cover"
                         className="w-full h-full object-cover rounded-lg shadow-md bg-gray-800/50"
                     />
@@ -304,7 +366,7 @@ const Player = ({
                         ref={progressRef}
                     >
                         <div
-                            className="h-2 bg-emerald-500 rounded-full accent-gray-800 max-w-full"
+                            className="h-2 bg-[var(--primary)] rounded-full max-w-full"
                             style={{
                                 width: `${
                                     (progress / (music?.duration || 100)) * 100
@@ -312,7 +374,7 @@ const Player = ({
                             }}
                         ></div>
                     </div>
-                    <div className="flex justify-between text-sm text-gray-500 mt-1">
+                    <div className="flex justify-between text-sm text-gray-200 mt-1">
                         <span>{formatDuration(progress)}</span>
                         <span>{formatDuration(music?.duration || 0)}</span>
                     </div>
@@ -321,36 +383,38 @@ const Player = ({
                 <div className="flex items-center justify-center space-x-4 text-gray-200">
                     <button
                         className={
-                            "hover:text-emerald-500 transition-colors " +
-                            (shuffle ? "text-emerald-500" : "")
+                            "hover:text-[var(--primary)] transition-colors " +
+                            (shuffle ? "text-[var(--primary)]" : "")
                         }
                         onClick={() => setShuffle(true)}
                     >
                         <Shuffle size={20} />
                     </button>
                     <button
-                        className="hover:text-emerald-500 transition-colors"
+                        className="hover:text-[var(--primary)] transition-colors"
                         onClick={prevSong}
                     >
                         <SkipBack size={24} />
                     </button>
                     <button
-                        className="w-12 h-12 rounded-full bg-emerald-600 flex items-center justify-center text-white hover:bg-emerald-500 transition-colors"
+                        className="w-12 h-12 rounded-full flex items-center justify-center bg-[var(--primary)] text-white hover:bg-[var(--accent)] transition-colors"
                         onClick={playPause}
                         disabled={loading || !music}
                     >
                         {playing ? <Pause size={24} /> : <Play size={24} />}
                     </button>
                     <button
-                        className="hover:text-emerald-500 transition-colors"
+                        className="hover:text-[var(--primary)] transition-colors"
                         onClick={nextSong}
                     >
                         <SkipForward size={24} />
                     </button>
                     <button
                         className={
-                            "hover:text-emerald-500 transition-colors " +
-                            (audioRef.current?.loop ? "text-emerald-500" : "")
+                            "hover:text-[var(--primary)] transition-colors " +
+                            (audioRef.current?.loop
+                                ? "text-[var(--primary)]"
+                                : "")
                         }
                         onClick={setRepeat}
                     >
@@ -365,7 +429,7 @@ const Player = ({
                         ref={volumeRef}
                     >
                         <div
-                            className="h-2 bg-emerald-500 rounded-full"
+                            className="h-2 bg-[var(--primary)] rounded-full"
                             style={{
                                 width:
                                     (audioRef.current?.volume || 0) * 100 + "%",
@@ -376,7 +440,7 @@ const Player = ({
             </div>
             <Toast message={error} type="error" />
             {colors && (
-                <div className="absolute w-full bottom-0">
+                <div className="absolute w-full bottom-0 max-h:translate-y-5">
                     {audioRef.current && (
                         <Waves
                             colors={colors}

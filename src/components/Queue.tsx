@@ -122,8 +122,8 @@ const QueueItem = ({
                     <button
                         className={`transition-colors ${
                             inPlaylist
-                                ? "text-emerald-500"
-                                : "text-white hover:text-emerald-500"
+                                ? "text-[var(--primary)]"
+                                : "text-white hover:text-[var(--primary)]"
                         }`}
                         disabled={inPlaylist}
                         onClick={(e) => {
@@ -142,7 +142,7 @@ const QueueItem = ({
                 )}
                 {onDelete && (
                     <button
-                        className="text-white hover:text-emerald-500 transition-colors"
+                        className="text-white hover:text-[var(--primary)] transition-colors"
                         onClick={(e) => {
                             e.stopPropagation();
                             onDelete();

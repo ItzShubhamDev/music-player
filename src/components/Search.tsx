@@ -66,7 +66,7 @@ const Search = ({
                     <input
                         type="text"
                         placeholder="Search for a song..."
-                        className="w-full p-2 pr-10 bg-gray-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        className="w-full p-2 pr-10 bg-gray-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
                     />
@@ -77,7 +77,7 @@ const Search = ({
                         opacity={1}
                     />
                     <button
-                        className="absolute top-0 right-0 h-full px-3 text-emerald-500"
+                        className="absolute top-0 right-0 h-full px-3 text-[var(--primary)]"
                         onClick={search}
                         data-tooltip-content="Search"
                         data-tooltip-id="search-input"
@@ -191,7 +191,7 @@ const SearchItem = ({
             <div className="flex items-center space-x-1">
                 <Tooltip id={song.videoId + "play"} place="top" noArrow />
                 <button
-                    className="text-white hover:text-emerald-500 transition-colors"
+                    className="text-white hover:text-[var(--primary)] transition-colors"
                     onClick={play}
                     data-tooltip-content="Play"
                     data-tooltip-id={song.videoId + "play"}
@@ -200,7 +200,7 @@ const SearchItem = ({
                 </button>
                 <Tooltip id={song.videoId + "list"} place="top" noArrow />
                 <button
-                    className="text-white hover:text-emerald-500 transition-colors"
+                    className="text-white hover:text-[var(--primary)] transition-colors"
                     onClick={addToList}
                     data-tooltip-content="Add to Queue"
                     data-tooltip-id={song.videoId + "list"}

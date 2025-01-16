@@ -16,6 +16,9 @@ export default {
             transformOrigin: {
                 "left-right": "0% 50%",
             },
+            screens: {
+                "max-h": { raw: "(max-height: 700px)" },
+            },
         },
     },
     plugins: [],

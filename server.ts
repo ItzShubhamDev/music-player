@@ -11,7 +11,6 @@ try {
     agent = ytdl.createAgent(cookies.default, {
         pipelining: 5,
         maxRedirections: 0,
-        localAddress: "127.0.0.1",
     });
 } catch (e) {
     console.log("Error settings cookies, proceeding without cookies", e);

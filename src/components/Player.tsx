@@ -12,6 +12,7 @@ import {
 import { Tooltip } from "react-tooltip";
 import Waves from "./Waves";
 import { extractColors } from "extract-colors";
+import Toast from "./Toast";
 
 const Player = ({
     music,
@@ -41,6 +42,7 @@ const Player = ({
     const [cover, setCover] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [shuffle, setShuffle] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         const getMusic = async (v: string) => {
@@ -50,6 +52,7 @@ const Player = ({
                 const url = URL.createObjectURL(blob);
                 setCover(url);
             } catch (error) {
+                setError("Error fetching music");
                 console.error("Error fetching music:", error);
                 return null;
             }
@@ -82,10 +85,16 @@ const Player = ({
                         /* empty */
                     }
                 } else {
-                    console.error("Failed to fetch audio");
+                    if (history.length > 0) {
+                        setMusic(history[0]);
+                        setHistory((prev) => prev.slice(1));
+                    }
+                    setError("Error fetching audio");
                 }
                 setLoading(false);
             } catch (error) {
+                setLoading(false);
+                setError("Error fetching audio");
                 console.error("Error fetching audio:", error);
             }
         };
@@ -254,7 +263,7 @@ const Player = ({
                     <img
                         src={cover || "/music.png"}
                         alt="Album Cover"
-                        className="w-full h-full object-cover rounded-lg shadow-md bg-white"
+                        className="w-full h-full object-cover rounded-lg shadow-md bg-gray-800/50"
                     />
                 </div>
 
@@ -349,7 +358,6 @@ const Player = ({
                     </button>
                 </div>
 
-                {/* Volume Control */}
                 <div className="flex items-center gap-2 w-full">
                     <Volume2 size={20} className="text-gray-400" />
                     <div
@@ -366,6 +374,7 @@ const Player = ({
                     </div>
                 </div>
             </div>
+            <Toast message={error} type="error" />
             {colors && (
                 <div className="absolute w-full bottom-0">
                     {audioRef.current && (

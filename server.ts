@@ -4,6 +4,18 @@ import ytdl from "@distube/ytdl-core";
 import YTMusic from "ytmusic-api";
 const ytmusic = new YTMusic();
 import { Readable } from "stream";
+let agent: ytdl.Agent | undefined;
+
+try {
+    const cookies = await import("./cookies.json");
+    agent = ytdl.createAgent(cookies.default, {
+        pipelining: 5,
+        maxRedirections: 0,
+        localAddress: "127.0.0.1",
+    });
+} catch (e) {
+    console.log("Error settings cookies, proceeding without cookies", e);
+}
 
 const app = express();
 
@@ -12,7 +24,8 @@ app.get("/info", async (req, res) => {
     if (!v) return res.status(400).send("Missing video ID.");
     try {
         const info = await ytdl.getBasicInfo(
-            `https://www.youtube.com/watch?v=${v}`
+            `https://www.youtube.com/watch?v=${v}`,
+            { agent }
         );
         res.json(info);
     } catch (err) {
@@ -29,6 +42,7 @@ app.get("/song", async (req, res) => {
         const response = ytdl(`https://www.youtube.com/watch?v=${v}`, {
             filter: "audioonly",
             quality: "highestaudio",
+            agent,
         });
         const buffer = await streamToBuffer(response);
         res.setHeader("Content-Type", "audio/mpeg");
@@ -64,7 +78,8 @@ app.get("/thumbnail", async (req, res) => {
     const v = req.query.v as string;
     if (!v) return res.status(400).send("Missing video ID.");
     const info = await ytdl.getBasicInfo(
-        `https://www.youtube.com/watch?v=${v}`
+        `https://www.youtube.com/watch?v=${v}`,
+        { agent }
     );
     const thumbnail = bestThumbnail(info.videoDetails.thumbnails);
     const r = await fetch(thumbnail.url);
